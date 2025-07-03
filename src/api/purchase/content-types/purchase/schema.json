@@ -1,0 +1,45 @@
+{
+  "kind": "collectionType",
+  "collectionName": "purchases",
+  "info": {
+    "singularName": "purchase",
+    "pluralName": "purchases",
+    "displayName": "Purchase"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "quantity": {
+      "type": "integer",
+      "required": true
+    },
+    "purchase_price": {
+      "type": "decimal",
+      "required": true
+    },
+    "status_purchase": {
+      "type": "enumeration",
+      "required": true,
+      "default": "PENDING",
+      "enum": [
+        "PENDING",
+        "RECEIVED",
+        "CANCELLED"
+      ]
+    },
+    "order_date": {
+      "type": "datetime",
+      "required": false
+    },
+    "received_date": {
+      "type": "datetime"
+    },
+    "products": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::product.product"
+    }
+  }
+}
