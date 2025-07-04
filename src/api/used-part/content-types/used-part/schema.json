@@ -25,9 +25,9 @@
       "target": "api::repair-job.repair-job",
       "inversedBy": "used_parts"
     },
-    "product": {
+    "products": {
       "type": "relation",
-      "relation": "oneToOne",
+      "relation": "oneToMany",
       "target": "api::product.product"
     }
   }

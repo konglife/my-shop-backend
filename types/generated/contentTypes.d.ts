@@ -570,7 +570,7 @@ export interface ApiSaleItemSaleItem extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     price_at_time: Schema.Attribute.Decimal;
-    product: Schema.Attribute.Relation<'oneToOne', 'api::product.product'>;
+    products: Schema.Attribute.Relation<'oneToMany', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
     quantity: Schema.Attribute.Integer & Schema.Attribute.Required;
     sale: Schema.Attribute.Relation<'manyToOne', 'api::sale.sale'>;
@@ -715,7 +715,7 @@ export interface ApiUsedPartUsedPart extends Struct.CollectionTypeSchema {
       'api::used-part.used-part'
     > &
       Schema.Attribute.Private;
-    product: Schema.Attribute.Relation<'oneToOne', 'api::product.product'>;
+    products: Schema.Attribute.Relation<'oneToMany', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
     quantity: Schema.Attribute.Integer & Schema.Attribute.Required;
     repair_job: Schema.Attribute.Relation<
