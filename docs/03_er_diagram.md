@@ -80,7 +80,7 @@
     * `order_date`: วันที่สั่งซื้อ (Date/Time)
     * `received_date`: วันที่รับของแล้ว (Date/Time, Nullable)
 * **Relations (ใน Strapi):**
-    * `product`: เชื่อมโยงกับ `Product` (oneWay relation with `Product`)
+    * `product`: เชื่อมโยงกับ `Product` (oneToMany relation with `Product`)
     * `supplier`: เชื่อมโยงกับ `Supplier` (oneWay relation with `Supplier`)
 
 ---
