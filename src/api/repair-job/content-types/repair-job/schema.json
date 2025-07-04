@@ -1,0 +1,54 @@
+{
+  "kind": "collectionType",
+  "collectionName": "repair_jobs",
+  "info": {
+    "singularName": "repair-job",
+    "pluralName": "repair-jobs",
+    "displayName": "RepairJob"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "status_repair": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED"
+      ]
+    },
+    "total_cost": {
+      "type": "decimal",
+      "required": true
+    },
+    "parts_cost": {
+      "type": "decimal",
+      "required": false
+    },
+    "labor_cost": {
+      "type": "decimal"
+    },
+    "customer": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::customer.customer",
+      "inversedBy": "repair_jobs"
+    },
+    "used_parts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::used-part.used-part",
+      "mappedBy": "repair_job"
+    }
+  }
+}

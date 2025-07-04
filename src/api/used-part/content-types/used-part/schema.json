@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "used_parts",
+  "info": {
+    "singularName": "used-part",
+    "pluralName": "used-parts",
+    "displayName": "UsedPart"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "quantity": {
+      "type": "integer",
+      "required": true
+    },
+    "cost_at_time": {
+      "type": "decimal",
+      "required": false
+    },
+    "repair_job": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::repair-job.repair-job",
+      "inversedBy": "used_parts"
+    },
+    "product": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::product.product"
+    }
+  }
+}

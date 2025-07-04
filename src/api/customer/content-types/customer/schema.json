@@ -23,6 +23,18 @@
     },
     "address": {
       "type": "text"
+    },
+    "repair_jobs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::repair-job.repair-job",
+      "mappedBy": "customer"
+    },
+    "sales": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::sale.sale",
+      "mappedBy": "customer"
     }
   }
 }

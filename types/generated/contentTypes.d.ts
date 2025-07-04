@@ -426,6 +426,11 @@ export interface ApiCustomerCustomer extends Struct.CollectionTypeSchema {
     name: Schema.Attribute.String & Schema.Attribute.Required;
     phone: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
+    repair_jobs: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::repair-job.repair-job'
+    >;
+    sales: Schema.Attribute.Relation<'oneToMany', 'api::sale.sale'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -496,6 +501,109 @@ export interface ApiPurchasePurchase extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'PENDING'>;
+    supplier: Schema.Attribute.Relation<'oneToOne', 'api::supplier.supplier'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiRepairJobRepairJob extends Struct.CollectionTypeSchema {
+  collectionName: 'repair_jobs';
+  info: {
+    displayName: 'RepairJob';
+    pluralName: 'repair-jobs';
+    singularName: 'repair-job';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customer: Schema.Attribute.Relation<'manyToOne', 'api::customer.customer'>;
+    description: Schema.Attribute.Text;
+    labor_cost: Schema.Attribute.Decimal;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::repair-job.repair-job'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    parts_cost: Schema.Attribute.Decimal;
+    publishedAt: Schema.Attribute.DateTime;
+    status_repair: Schema.Attribute.Enumeration<
+      ['IN_PROGRESS', 'COMPLETED', 'CANCELLED']
+    > &
+      Schema.Attribute.Required;
+    total_cost: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    used_parts: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::used-part.used-part'
+    >;
+  };
+}
+
+export interface ApiSaleItemSaleItem extends Struct.CollectionTypeSchema {
+  collectionName: 'sale_items';
+  info: {
+    displayName: 'SaleItem';
+    pluralName: 'sale-items';
+    singularName: 'sale-item';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::sale-item.sale-item'
+    > &
+      Schema.Attribute.Private;
+    price_at_time: Schema.Attribute.Decimal;
+    product: Schema.Attribute.Relation<'oneToOne', 'api::product.product'>;
+    publishedAt: Schema.Attribute.DateTime;
+    quantity: Schema.Attribute.Integer & Schema.Attribute.Required;
+    sale: Schema.Attribute.Relation<'manyToOne', 'api::sale.sale'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSaleSale extends Struct.CollectionTypeSchema {
+  collectionName: 'sales';
+  info: {
+    displayName: 'Sale';
+    pluralName: 'sales';
+    singularName: 'sale';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customer: Schema.Attribute.Relation<'manyToOne', 'api::customer.customer'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::sale.sale'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    sale_items: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::sale-item.sale-item'
+    >;
+    total_amount: Schema.Attribute.Decimal & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -580,6 +688,40 @@ export interface ApiUnitUnit extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiUsedPartUsedPart extends Struct.CollectionTypeSchema {
+  collectionName: 'used_parts';
+  info: {
+    displayName: 'UsedPart';
+    pluralName: 'used-parts';
+    singularName: 'used-part';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    cost_at_time: Schema.Attribute.Decimal;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::used-part.used-part'
+    > &
+      Schema.Attribute.Private;
+    product: Schema.Attribute.Relation<'oneToOne', 'api::product.product'>;
+    publishedAt: Schema.Attribute.DateTime;
+    quantity: Schema.Attribute.Integer & Schema.Attribute.Required;
+    repair_job: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::repair-job.repair-job'
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1099,9 +1241,13 @@ declare module '@strapi/strapi' {
       'api::customer.customer': ApiCustomerCustomer;
       'api::product.product': ApiProductProduct;
       'api::purchase.purchase': ApiPurchasePurchase;
+      'api::repair-job.repair-job': ApiRepairJobRepairJob;
+      'api::sale-item.sale-item': ApiSaleItemSaleItem;
+      'api::sale.sale': ApiSaleSale;
       'api::stock.stock': ApiStockStock;
       'api::supplier.supplier': ApiSupplierSupplier;
       'api::unit.unit': ApiUnitUnit;
+      'api::used-part.used-part': ApiUsedPartUsedPart;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;
