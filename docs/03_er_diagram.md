@@ -1,143 +1,259 @@
-# **ER Diagram (โครงสร้างฐานข้อมูลสำหรับ Strapi)**
+```mermaid
+erDiagram
+    CATEGORY {
+        string name
+    }
+    CUSTOMER {
+        string name
+        string phone
+        string email
+        text address
+    }
+    PRODUCT {
+        string name
+        blocks description
+        decimal selling_price
+    }
+    PURCHASE {
+        integer quantity
+        decimal purchase_price
+        enumeration status_purchase
+        datetime order_date
+        datetime received_date
+    }
+    REPAIR_JOB {
+        string name
+        text description
+        enumeration status_repair
+        decimal total_cost
+        decimal parts_cost
+        decimal labor_cost
+    }
+    SALE {
+        decimal total_amount
+    }
+    SALE_ITEM {
+        integer quantity
+        decimal price_at_time
+    }
+    STOCK {
+        integer quantity
+        integer min_quantity
+        decimal average_cost
+    }
+    SUPPLIER {
+        string name
+        string contact_person
+        string phone
+        email email
+    }
+    UNIT {
+        string name
+    }
+    USED_PART {
+        integer quantity
+        decimal cost_at_time
+    }
 
-เอกสารนี้อธิบายโครงสร้างและความสัมพันธ์ของตารางข้อมูล (Entities หรือในบริบทของ Strapi คือ **Content Types**) ทั้งหมดในระบบจัดการร้าน ซึ่งจะเป็นพิมพ์เขียวหลักสำหรับการสร้าง Content Types และกำหนด Relations ใน Strapi Admin Panel.
+    CUSTOMER ||--o{ REPAIR_JOB : "repair_jobs"
+    CUSTOMER ||--o{ SALE : "sales"
+    REPAIR_JOB ||--o{ USED_PART : "used_parts"
+    PURCHASE ||--o{ PRODUCT : "products"
+    SALE ||--o{ SALE_ITEM : "sale_items"
+    USED_PART ||--o{ PRODUCT : "products"
+    SALE_ITEM ||--o{ PRODUCT : "products"
+    PRODUCT ||--|| CATEGORY : "category"
+    PRODUCT ||--|| UNIT : "unit"
+    PRODUCT ||--|| STOCK : "stock"
+    PURCHASE ||--|| SUPPLIER : "supplier"
+```
 
----
+## คำอธิบาย
 
-### **1. Content Types (Data Models ใน Strapi)**
+**1. CATEGORY**
 
-#### **Customer (ลูกค้า)**
-* **Fields:**
-    * `name`: string, required
-    * `phone`: string
-    * `email`: email
-    * `address`: text
-* **Relations:**
-    * `repair_jobs`: oneToMany → RepairJob (mappedBy: customer)
-    * `sales`: oneToMany → Sale (mappedBy: customer)
+* **attributes**
 
----
+  * `name` (string, ข้อมูลจำเป็น)
+* **ความสัมพันธ์**
 
-#### **Product (สินค้า)**
-* **Fields:**
-    * `name`: string, required
-    * `description`: blocks
-    * `selling_price`: decimal, required
-* **Relations:**
-    * `category`: oneToOne → Category
-    * `unit`: oneToOne → Unit
-    * `stock`: oneToOne → Stock (mappedBy: product)
-
----
-
-#### **Category (หมวดหมู่สินค้า)**
-* **Fields:**
-    * `name`: string, required
-
----
-
-#### **Unit (หน่วยสินค้า)**
-* **Fields:**
-    * `name`: string, required
-
----
-
-#### **Supplier (ผู้จัดจำหน่าย)**
-* **Fields:**
-    * `name`: string, required
-    * `contact_person`: string
-    * `phone`: string
-    * `email`: email
-
----
-
-#### **Stock (คลังสินค้า)**
-* **Fields:**
-    * `quantity`: integer
-    * `min_quantity`: integer, default: 2
-    * `average_cost`: decimal
-* **Relations:**
-    * `product`: oneToOne → Product (inversedBy: stock)
-
----
-
-#### **Purchase (ใบสั่งซื้อ)**
-* **Fields:**
-    * `quantity`: integer, required
-    * `purchase_price`: decimal, required
-    * `status_purchase`: enumeration (`PENDING`, `RECEIVED`, `CANCELLED`), required, default: `PENDING`
-    * `order_date`: datetime
-    * `received_date`: datetime
-* **Relations:**
-    * `products`: oneToMany → Product
-    * `supplier`: oneToOne → Supplier
-
----
-
-#### **RepairJob (งานซ่อม)**
-* **Fields:**
-    * `name`: string, required
-    * `description`: text
-    * `status_repair`: enumeration (`IN_PROGRESS`, `COMPLETED`, `CANCELLED`), required
-    * `total_cost`: decimal, required
-    * `parts_cost`: decimal
-    * `labor_cost`: decimal
-* **Relations:**
-    * `customer`: manyToOne → Customer (inversedBy: repair_jobs)
-    * `used_parts`: oneToMany → UsedPart (mappedBy: repair_job)
+  * ไม่มีฝั่ง inverse ใน schema นี้ แต่แต่ละ `PRODUCT` จะชี้ไปยัง `CATEGORY` ผ่านความสัมพันธ์ one-to-one (`PRODUCT.category`)
 
 ---
 
-#### **UsedPart (อะไหล่ที่ใช้ในงานซ่อม)**
-* **Fields:**
-    * `quantity`: integer, required
-    * `cost_at_time`: decimal
-* **Relations:**
-    * `repair_job`: manyToOne → RepairJob (inversedBy: used_parts)
-    * `products`: oneToMany → Product
+**2. CUSTOMER**
+
+* **attributes**
+
+  * `name` (string, จำเป็น)
+  * `phone` (string, ไม่จำเป็น)
+  * `email` (email, ไม่จำเป็น)
+  * `address` (text, ไม่จำเป็น)
+* **ความสัมพันธ์**
+
+  * **หนึ่งลูกค้า (1 CUSTOMER) สร้างได้หลายใบซ่อม (N REPAIR\_JOB)**
+
+    * แท็กความสัมพันธ์: `repair_jobs` (one-to-many)
+  * **หนึ่งลูกค้า (1 CUSTOMER) มีหลายการขาย (N SALE)**
+
+    * แท็กความสัมพันธ์: `sales` (one-to-many)
 
 ---
 
-#### **Sale (การขาย)**
-* **Fields:**
-    * `total_amount`: decimal, required
-* **Relations:**
-    * `customer`: manyToOne → Customer (inversedBy: sales)
-    * `sale_items`: oneToMany → SaleItem (mappedBy: sale)
+**3. PRODUCT**
+
+* **attributes**
+
+  * `name` (string, จำเป็น)
+  * `description` (blocks, ไม่จำเป็น)
+  * `selling_price` (decimal, จำเป็น)
+* **ความสัมพันธ์**
+
+  * **แต่ละสินค้า (PRODUCT) มีหมวดหมู่หนึ่ง (CATEGORY)**
+
+    * one-to-one (`category`)
+  * **แต่ละสินค้า (PRODUCT) มีหน่วยนับหนึ่ง (UNIT)**
+
+    * one-to-one (`unit`)
+  * **แต่ละสินค้า (PRODUCT) มีสต็อกหนึ่ง (STOCK)**
+
+    * one-to-one แบบสองทิศทาง (`stock`)
 
 ---
 
-#### **SaleItem (รายการสินค้าในใบเสร็จ)**
-* **Fields:**
-    * `quantity`: integer, required
-    * `price_at_time`: decimal
-* **Relations:**
-    * `sale`: manyToOne → Sale (inversedBy: sale_items)
-    * `products`: oneToMany → Product
+**4. PURCHASE**
+
+* **attributes**
+
+  * `quantity` (integer, จำเป็น)
+  * `purchase_price` (decimal, จำเป็น)
+  * `status_purchase` (enumeration, จำเป็น)
+  * `order_date` (datetime, ไม่จำเป็น)
+  * `received_date` (datetime, ไม่จำเป็น)
+* **ความสัมพันธ์**
+
+  * **หนึ่งใบสั่งซื้อ (1 PURCHASE) เกี่ยวข้องกับสินค้าหลายรายการ (N PRODUCT)**
+
+    * one-to-many (`products`)
+  * **หนึ่งใบสั่งซื้อ (1 PURCHASE) มาจากผู้จัดส่งหนึ่ง (1 SUPPLIER)**
+
+    * one-to-one (`supplier`)
 
 ---
 
-### **2. ความสัมพันธ์ (Relationships) โดยสรุปในมุมมองของ Strapi**
+**5. REPAIR\_JOB**
 
-* **Customer ↔ RepairJob:** oneToMany (customer: one, repair_jobs: many)
-* **Customer ↔ Sale:** oneToMany (customer: one, sales: many)
-* **Product ↔ Stock:** oneToOne (product: one, stock: one)
-* **Category ↔ Product:** oneToOne (category: one, product: one)
-* **Supplier ↔ Purchase:** oneToOne (supplier: one, purchase: one)
-* **RepairJob ↔ UsedPart:** oneToMany (repair_job: one, used_parts: many)
-* **Sale ↔ SaleItem:** oneToMany (sale: one, sale_items: many)
+* **attributes**
+
+  * `name` (string, จำเป็น)
+  * `description` (text, ไม่จำเป็น)
+  * `status_repair` (enumeration, จำเป็น)
+  * `total_cost` (decimal, จำเป็น)
+  * `parts_cost` (decimal, ไม่จำเป็น)
+  * `labor_cost` (decimal, ไม่จำเป็น)
+* **ความสัมพันธ์**
+
+  * **การซ่อมหนึ่งรายการ (1 REPAIR\_JOB) ดำเนินการให้ลูกค้าหนึ่ง (1 CUSTOMER)**
+
+    * many-to-one (`customer`)
+  * **การซ่อมหนึ่งรายการ (1 REPAIR\_JOB) มีอะไหล่ที่ใช้หลายรายการ (N USED\_PART)**
+
+    * one-to-many (`used_parts`)
+
+---
+
+**6. SALE**
+
+* **attributes**
+
+  * `total_amount` (decimal, จำเป็น)
+* **ความสัมพันธ์**
+
+  * **การขายหนึ่งรายการ (1 SALE) เกิดจากลูกค้าหนึ่ง (1 CUSTOMER)**
+
+    * many-to-one (`customer`)
+  * **การขายหนึ่งรายการ (1 SALE) แยกออกเป็นหลายรายการย่อย (N SALE\_ITEM)**
+
+    * one-to-many (`sale_items`)
 
 ---
 
-### **3. หมายเหตุ**
+**7. SALE\_ITEM**
 
-* ฟิลด์ที่เป็น relation แบบ oneToMany, manyToOne, oneToOne, etc. อ้างอิงตาม schema จริงในแต่ละไฟล์
-* ฟิลด์ที่เป็น required, default, หรือชนิดข้อมูล อ้างอิงจาก schema.json
-* ฟิลด์/relations ที่ schema จริงไม่มี จะไม่แสดงในเอกสารนี้
-* ฟิลด์ที่เป็น blocks (rich text) ใช้ type blocks ตาม Strapi
-* ฟิลด์ที่เป็น email ใช้ type email ตาม Strapi
-* ฟิลด์ที่เป็น enumeration ระบุค่าที่เป็นไปได้
-* **RepairJob ↔ UsedPart (One-to-Many):** งานซ่อม 1 งาน ใช้ชิ้นส่วนได้หลายรายการ (repair_job: one, used_parts: many)
-* **Sale ↔ SaleItem (One-to-Many):** ใบเสร็จ 1 ใบ มีรายการสินค้าได้หลายรายการ (sale: one, sale_items: many)
+* **attributes**
+
+  * `quantity` (integer, จำเป็น)
+  * `price_at_time` (decimal, ไม่จำเป็น)
+* **ความสัมพันธ์**
+
+  * **แต่ละ sale\_item เชื่อมกับการขายหนึ่งรายการ (1 SALE)**
+
+    * many-to-one (`sale`)
+  * **แต่ละ sale\_item อาจเกี่ยวข้องกับสินค้าหลายรายการ (N PRODUCT)**
+
+    * one-to-many (`products`)
 
 ---
+
+**8. STOCK**
+
+* **attributes**
+
+  * `quantity` (integer, ไม่จำเป็น)
+  * `min_quantity` (integer, ไม่จำเป็น)
+  * `average_cost` (decimal, ไม่จำเป็น)
+* **ความสัมพันธ์**
+
+  * **สต็อกหนึ่ง (1 STOCK) เก็บข้อมูลสำหรับสินค้าเดียว (1 PRODUCT)**
+
+    * one-to-one (`product`)
+
+---
+
+**9. SUPPLIER**
+
+* **attributes**
+
+  * `name` (string, จำเป็น)
+  * `contact_person` (string, ไม่จำเป็น)
+  * `phone` (string, ไม่จำเป็น)
+  * `email` (email, ไม่จำเป็น)
+* **ความสัมพันธ์**
+
+  * **เชื่อมกับการสั่งซื้อ (PURCHASE) แบบ one-to-one**
+
+---
+
+**10. UNIT**
+
+* **attributes**
+
+  * `name` (string, จำเป็น)
+* **ความสัมพันธ์**
+
+  * **เชื่อมกับสินค้า (PRODUCT) แบบ one-to-one**
+
+---
+
+**11. USED\_PART**
+
+* **attributes**
+
+  * `quantity` (integer, จำเป็น)
+  * `cost_at_time` (decimal, ไม่จำเป็น)
+* **ความสัมพันธ์**
+
+  * **อะไหล่ที่ใช้แต่ละรายการ (1 USED\_PART) เป็นส่วนหนึ่งของการซ่อมหนึ่งรายการ (1 REPAIR\_JOB)**
+
+    * many-to-one (`repair_job`)
+  * **อะไหล่ที่ใช้หนึ่งรายการ (1 USED\_PART) อาจเชื่อมกับสินค้าหลายรายการ (N PRODUCT)**
+
+    * one-to-many (`products`)
+
+---
+
+> 🌟 อธิบายภาพรวม:
+>
+> * เรามี **11 Entity** หลัก ครอบคลุมตั้งแต่ข้อมูลลูกค้า, สินค้า, การขาย, การสั่งซื้อ, งานซ่อม, จนถึงอะไหล่ที่ใช้
+> * ใช้ **mermaid ER Diagram** เพื่อแสดงความสัมพันธ์ (cardinality) ระหว่าง Entity แต่ละตัว
+> * คำอธิบายแต่ละ Entity เขียนอย่างละเอียด ตั้งแต่ชนิดข้อมูล (type) ว่าจำเป็นหรือไม่ ถึงขอบเขตความสัมพันธ์
