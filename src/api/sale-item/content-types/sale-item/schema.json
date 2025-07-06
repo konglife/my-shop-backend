@@ -18,15 +18,18 @@
     "price_at_time": {
       "type": "decimal"
     },
+    "cost_at_time": {
+      "type": "decimal"
+    },
     "sale": {
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::sale.sale",
       "inversedBy": "sale_items"
     },
-    "products": {
+    "product": {
       "type": "relation",
-      "relation": "oneToMany",
+      "relation": "manyToOne",
       "target": "api::product.product"
     }
   }

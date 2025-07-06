@@ -19,7 +19,7 @@
 
 ## **2. General Instructions & Persona**
 
-* **Persona:** ให้ทำหน้าที่เป็น "Senior Full-Stack Developer" ที่มีประสบการณ์ในการใช้ Strapi และ Tech Stack นี้เป็นอย่างดี
+* **Persona:** ให้ทำหน้าที่เป็น "Senior Full-Stack Developer" ที่มีประสบการณ์ในการใช้ Strapi V5 และ Tech Stack นี้เป็นอย่างดี
 * **Code Quality:** โค้ดที่สร้างต้องสะอาด, อ่านง่าย, และปฏิบัติตามหลักการเขียนโค้ดที่ดี
 * **Comments:** ให้ใส่ comment อธิบายในส่วนของโค้ดที่มีความซับซ้อน หรือ Business Logic ที่สำคัญ โดยเฉพาะใน Lifecycles Hooks และ Custom Services
 * **Language:** โค้ดและชื่อไฟล์ทั้งหมดให้เป็นภาษาอังกฤษ ส่วน comment สามารถเป็นภาษาไทยได้หากจำเป็น
@@ -58,16 +58,27 @@
 
 นี่คือ "กฎเหล็ก" ของโปรเจกต์ที่ต้องจำให้ขึ้นใจเสมอเมื่อสร้างโค้ดที่เกี่ยวข้องใน Strapi:
 
-* **Stock Update Logic:**
-    * **ลดสต็อก (-):** เมื่อมีการสร้าง `SaleItem` ใหม่ (ใน `sale-item` Lifecycles `afterCreate`) หรือเมื่อ `RepairJob` ถูกอัปเดตสถานะเป็น `COMPLETED` (ใน `repair-job` Lifecycles `afterUpdate`). ต้องลด `quantity` ในตาราง `Stock` ของสินค้าที่เกี่ยวข้อง.
-    * **เพิ่มสต็อก (+):** เมื่อ `Purchase` ถูกอัปเดตสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`). ต้องเพิ่ม `quantity` ในตาราง `Stock`.
-* **Cost Calculation Logic:**
-    * **Average Cost (ต้นทุนเฉลี่ย):** เมื่อ `Purchase` มีสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`), จะต้องคำนวณ `average_cost` ของสินค้าในตาราง `Stock` ใหม่โดยใช้สูตร Moving Average.
-    * **Labor Cost (ค่าแรง):** ใน `RepairJob` (ใน `repair-job` Lifecycles `beforeUpdate`), ค่าแรง (`labor_cost`) จะถูกคำนวณจาก `total_cost` (ที่ผู้ใช้กรอก) ลบด้วย `parts_cost` (ต้นทุนรวมของอะไหล่ที่ใช้ ซึ่งคำนวณจาก `UsedPart`).
-    * **Parts Cost (ต้นทุนอะไหล่รวม):** เมื่อมีการเพิ่ม/ลบ `UsedPart` (ใน `used-part` Lifecycles `afterCreate`, `afterUpdate`, `afterDelete`), จะต้อง Trigger การคำนวณ `parts_cost` ของ `RepairJob` ที่เกี่ยวข้องใหม่.
-* **Status-Driven Logic:**
-    * การกระทำหลายอย่างในระบบถูกขับเคลื่อนด้วยการเปลี่ยน `status`.
-    * ตัวอย่าง: การตัดสต็อกจะเกิดขึ้นก็ต่อเมื่อ `RepairJob.status` เปลี่ยนเป็น `COMPLETED` เท่านั้น ไม่ใช่ตอนที่ยังเป็น `IN_PROGRESS`.
+* **Stock Update Logic (กฎการอัปเดตสต็อกสินค้า)**
+* **ลดสต็อก (-):**
+    * เมื่อมีการสร้าง `SaleItem` ใหม่ (ใน `sale-item` Lifecycles `afterCreate`).
+    * เมื่อ `RepairJob` ถูกอัปเดตสถานะเป็น `COMPLETED` (ใน `repair-job` Lifecycles `afterUpdate`).
+    * **[ใหม่]** เมื่อ `Purchase` ถูกเปลี่ยนสถานะจาก `RECEIVED` เป็นสถานะอื่น (เช่น `CANCELLED`) (ใน `purchase` Lifecycles `beforeUpdate` และ `afterUpdate`) จะต้อง **ลดสต็อกคืน** ตามจำนวนที่เคยรับเข้ามา
+
+* **เพิ่มสต็อก (+):**
+    * เมื่อ `Purchase` ถูกอัปเดตสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`).
+    * **[ใหม่]** เมื่อมีการลบ `SaleItem` หรือ `Sale` ทั้งหมด (ใน `sale-item` Lifecycles `afterDelete`) จะต้อง **เพิ่มสต็อกคืน**.
+    * **[ใหม่]** เมื่อ `RepairJob` ถูกเปลี่ยนสถานะจาก `COMPLETED` เป็นสถานะอื่น (เช่น `CANCELLED`) (ใน `repair-job` Lifecycles `beforeUpdate` และ `afterUpdate`) จะต้อง **เพิ่มสต็อกของอะไหล่ที่ใช้คืน**.
+
+* **Cost Calculation Logic (กฎการคำนวณต้นทุน)**
+* **Average Cost (ต้นทุนเฉลี่ย):** เมื่อ `Purchase` มีสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`), จะต้องคำนวณ `average_cost` ของสินค้าในตาราง `Stock` ใหม่โดยใช้สูตร Moving Average.
+    * **[ข้อควรพิจารณาเพิ่มเติม]** เมื่อมีการยกเลิก `Purchase` ที่เคยรับไปแล้ว การคำนวณต้นทุนเฉลี่ยย้อนกลับอาจซับซ้อนมาก ในระยะแรกอาจจะยังไม่ทำ หรืออาจจะบันทึกประวัติการเปลี่ยนแปลงต้นทุนไว้
+* **Labor Cost (ค่าแรง):** ใน `RepairJob` (ใน `repair-job` Lifecycles `beforeUpdate`), ค่าแรง (`labor_cost`) จะถูกคำนวณจาก `total_cost` (ที่ผู้ใช้กรอก) ลบด้วย `parts_cost` (ต้นทุนรวมของอะไหล่ที่ใช้ ซึ่งคำนวณจาก `UsedPart`).
+* **Parts Cost (ต้นทุนอะไหล่รวม):** เมื่อมีการเพิ่ม/ลบ `UsedPart` (ใน `used-part` Lifecycles `afterCreate`, `afterUpdate`, `afterDelete`), จะต้อง Trigger การคำนวณ `parts_cost` ของ `RepairJob` ที่เกี่ยวข้องใหม่.
+
+* **Status-Driven Logic (กฎที่ขับเคลื่อนด้วยสถานะ)**
+* การกระทำหลายอย่างในระบบถูกขับเคลื่อนด้วยการเปลี่ยน `status` ทั้งขาไปและขากลับ
+* **ตัวอย่างขาไป:** การตัดสต็อกจะเกิดขึ้นก็ต่อเมื่อ `RepairJob.status` เปลี่ยนเป็น `COMPLETED` เท่านั้น
+* **[ใหม่] ตัวอย่างขากลับ:** การเพิ่มสต็อกคืนจะเกิดขึ้นก็ต่อเมื่อ `RepairJob.status` **เคยเป็น `COMPLETED`** แล้วถูกเปลี่ยนเป็นสถานะอื่น เพื่อป้องกันการเพิ่มสต็อกซ้ำซ้อน การตรวจสอบสถานะก่อนหน้า (`event.state.status` ใน `beforeUpdate`) จึงเป็นสิ่งจำเป็นอย่างยิ่ง
 
 ---
 

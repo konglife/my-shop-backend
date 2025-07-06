@@ -13,7 +13,20 @@
   "attributes": {
     "total_amount": {
       "type": "decimal",
-      "required": true
+      "required": false
+    },
+    "total_cost": {
+      "type": "decimal"
+    },
+    "status_sale": {
+      "type": "enumeration",
+      "required": true,
+      "default": "DRAFT",
+      "enum": [
+        "DRAFT",
+        "COMPLETED",
+        "CANCELLED"
+      ]
     },
     "customer": {
       "type": "relation",

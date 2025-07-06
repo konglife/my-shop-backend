@@ -490,6 +490,7 @@ export interface ApiPurchasePurchase extends Struct.CollectionTypeSchema {
       'api::purchase.purchase'
     > &
       Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
     order_date: Schema.Attribute.DateTime;
     products: Schema.Attribute.Relation<'oneToMany', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
@@ -560,6 +561,7 @@ export interface ApiSaleItemSaleItem extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    cost_at_time: Schema.Attribute.Decimal;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -570,7 +572,7 @@ export interface ApiSaleItemSaleItem extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     price_at_time: Schema.Attribute.Decimal;
-    products: Schema.Attribute.Relation<'oneToMany', 'api::product.product'>;
+    product: Schema.Attribute.Relation<'manyToOne', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
     quantity: Schema.Attribute.Integer & Schema.Attribute.Required;
     sale: Schema.Attribute.Relation<'manyToOne', 'api::sale.sale'>;
@@ -603,7 +605,13 @@ export interface ApiSaleSale extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::sale-item.sale-item'
     >;
-    total_amount: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    status_sale: Schema.Attribute.Enumeration<
+      ['DRAFT', 'COMPLETED', 'CANCELLED']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'DRAFT'>;
+    total_amount: Schema.Attribute.Decimal;
+    total_cost: Schema.Attribute.Decimal;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
