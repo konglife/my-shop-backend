@@ -112,8 +112,8 @@
 | `POST` | `/`     | สร้างใบสั่งซื้อใหม่ | Admin       |
 | `GET`  | `/`     | ดึงข้อมูลใบสั่งซื้อทั้งหมด | Admin       |
 | `GET`  | `/{id}` | ดึงข้อมูลใบสั่งซื้อเฉพาะรายการ | Admin       |
-| `PUT`  | `/{id}` | อัปเดตข้อมูลใบสั่งซื้อทั้งหมด | Admin       |
-| `PUT`  | `/{id}/receive` | **Custom Endpoint:** อัปเดตสถานะเป็นรับของแล้ว และ Trigger Logic เพิ่มสต็อก/คำนวณต้นทุนเฉลี่ย | Admin |
+| `PUT`  | `/{id}` | อัปเดตข้อมูลใบสั่งซื้อทั้งหมด (เช่น เปลี่ยนสถานะเป็น RECEIVED) | Admin       |
+| `DELETE` | `/{id}` | ลบใบสั่งซื้อ (และลดสต็อกคืนหากเคย RECEIVED) | Admin |
 
 * **Request Body (`POST /api/purchases`):**
     ```json
@@ -122,21 +122,11 @@
       "supplier": { "id": 301 }, // เชื่อมโยงกับ Supplier ID
       "quantity": 10,
       "purchase_price": 870.00,
-      "status": "PENDING", // Initial status
+      "status_purchase": "PENDING", // หรือ "RECEIVED" หากต้องการเพิ่มสต็อกทันที
       "order_date": "2025-07-01T10:00:00.000Z"
     }
     ```
-
-* **Request Body (`PUT /api/purchases/{id}/receive`):**
-    ```json
-    {
-      "received_date": "2025-07-02T14:30:00.000Z" // Optional: ถ้าไม่ระบุ Strapi จะใช้ current timestamp
-    }
-    ```
-    * *หมายเหตุ:* Endpoint นี้จะถูกสร้างเป็น **Custom Endpoint/Controller** ใน Strapi และจะ Trigger Lifecycles Hook ใน `Purchase` เพื่อดำเนินการ:
-        1.  เปลี่ยน `status` ของ `Purchase` เป็น `RECEIVED`.
-        2.  เพิ่ม `quantity` ใน `Stock` ของ `Product` ที่เกี่ยวข้อง.
-        3.  คำนวณ `average_cost` ใหม่ใน `Stock` ของ `Product`.
+    * *หมายเหตุ:* การเพิ่มสต็อกและคำนวณต้นทุนเฉลี่ยจะเกิดขึ้นโดยอัตโนมัติเมื่อ `status_purchase` เป็น `RECEIVED` ซึ่งสามารถกำหนดได้ทั้งตอนสร้างผ่าน `POST` หรือตอนอัปเดตผ่าน `PUT /api/purchases/{id}`.
 
 *(Endpoints สำหรับ Categories และ Suppliers จะมีรูปแบบ CRUD ที่คล้ายกันกับ Products โดยไม่มี Logic พิเศษ)*
 
@@ -152,7 +142,7 @@
 | `GET`  | `/`               | ดึงข้อมูลงานซ่อมทั้งหมด | Authenticated User |
 | `GET`  | `/{id}`           | ดึงข้อมูลงานซ่อมเฉพาะรายการ | Authenticated User |
 | `PUT`  | `/{id}`           | อัปเดตข้อมูลงานซ่อมทั้งหมด (รวมถึง `total_cost` ที่ผู้ใช้กรอก) | Authenticated User |
-| `PUT`  | `/{id}/status`    | **Custom Endpoint:** อัปเดตสถานะงานซ่อม และ Trigger Logic สำคัญ | Authenticated User |
+| `DELETE` | `/{id}`           | ลบงานซ่อม (และคืนสต็อกหากเคย COMPLETED) | Admin |
 | `POST` | `/{id}/parts`     | **Custom Endpoint:** เพิ่มอะไหล่ที่ใช้ในงานซ่อม (`UsedPart`) | Authenticated User |
 | `DELETE` | `/{jobId}/parts/{partId}` | **Custom Endpoint:** ลบอะไหล่ที่ใช้ในงานซ่อม (`UsedPart`) | Authenticated User |
 
@@ -174,24 +164,11 @@
     {
       "total_cost": 2500.00, // ★★★ ผู้ใช้กรอกค่านี้เอง
       "description": "แก้ไขน้ำยาแอร์รั่ว",
-      "status": "IN_PROGRESS" // หรือสถานะอื่นๆ ที่ต้องการอัปเดต
+      "status": "COMPLETED" // หรือสถานะอื่นๆ ที่ต้องการอัปเดต
       // fields อื่นๆ ที่สามารถอัปเดตได้
     }
     ```
-    * *หมายเหตุ:* เมื่อ `total_cost` ถูกอัปเดตใน Endpoint นี้ Lifecycles Hook ของ `RepairJob` จะคำนวณ `labor_cost` โดยอัตโนมัติ (`total_cost - parts_cost`).
-
-#### `PUT /api/repair-jobs/{id}/status`
-
-* **Request Body:**
-    ```json
-    {
-      "status": "COMPLETED" // "IN_PROGRESS", "CANCELLED"
-      // ไม่มี total_cost หรือ labor_cost ในนี้ เพราะจะถูกจัดการผ่าน PUT /api/repair-jobs/{id}
-    }
-    ```
-    * *หมายเหตุ:* Endpoint นี้จะถูกสร้างเป็น **Custom Endpoint/Controller** ใน Strapi และจะ Trigger Lifecycles Hook ใน `RepairJob` เพื่อดำเนินการ:
-        1.  เปลี่ยน `status` ของ `RepairJob`.
-        2.  **ถ้า `status` เป็น `COMPLETED`:** ทำการตัดสต็อกอะไหล่ทั้งหมดใน `UsedPart` ที่เกี่ยวข้องกับ `RepairJob` นี้.
+    * *หมายเหตุ:* เมื่อมีการส่ง `status` เป็น `COMPLETED` ผ่าน Endpoint นี้ Lifecycles Hook ของ `RepairJob` จะทำการตัดสต็อกโดยอัตโนมัติ และเมื่อมีการส่ง `total_cost` จะมีการคำนวณ `labor_cost` ใหม่ด้วย
 
 #### `POST /api/repair-jobs/{id}/parts` (สำหรับเพิ่ม `UsedPart`)
 
@@ -219,7 +196,8 @@
 | `POST` | `/`     | สร้างการขายใหม่ (ออกใบเสร็จ) | Authenticated User |
 | `GET`  | `/`     | ดึงข้อมูลการขายทั้งหมด | Authenticated User |
 | `GET`  | `/{id}` | ดึงข้อมูลการขายเฉพาะใบเสร็จ | Authenticated User |
-| `PUT`  | `/{id}` | อัปเดตข้อมูลการขาย (ไม่แนะนำให้อัปเดตหลังสร้าง) | Authenticated User |
+| `PUT`  | `/{id}` | อัปเดตข้อมูลการขาย (เช่น เปลี่ยนสถานะเป็น COMPLETED เพื่อตัดสต็อก) | Authenticated User |
+| `DELETE` | `/{id}` | ลบการขาย (และคืนสต็อกหากเคย COMPLETED) | Admin |
 
 #### `POST /api/sales`
 
@@ -227,6 +205,7 @@
     ```json
     {
       "customer": { "id": 1 }, // (Optional) เชื่อมโยงกับ Customer ID, หากเป็นขายสดไม่ต้องระบุ
+      "status": "DRAFT", // หรือ "COMPLETED" หากต้องการให้ตัดสต็อกทันที
       "sale_items": [
         {
           "product": { "id": 101 }, // เชื่อมโยงกับ Product ID
@@ -239,7 +218,4 @@
       ]
     }
     ```
-    * *หมายเหตุ:* Endpoint นี้จะถูกสร้างเป็น **Custom Endpoint/Controller**. Backend จะดำเนินการ:
-        1.  คำนวณ `total_amount` ของ `Sale` อัตโนมัติ.
-        2.  บันทึก `price_at_time` ในแต่ละ `SaleItem` (จาก `Product.selling_price` ณ เวลานั้น).
-        3.  ตัดสต็อกสินค้าใน `Stock` ของ `Product` ที่เกี่ยวข้องสำหรับแต่ละ `SaleItem`.
+    * *หมายเหตุ:* การตัดสต็อกจะเกิดขึ้นเมื่อ `status` ของ `Sale` เป็น `COMPLETED` เท่านั้น ซึ่งสามารถกำหนดได้ทั้งตอนสร้างผ่าน `POST` หรือตอนอัปเดตผ่าน `PUT /api/sales/{id}`.

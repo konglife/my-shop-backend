@@ -58,18 +58,16 @@
 
 นี่คือ "กฎเหล็ก" ของโปรเจกต์ที่ต้องจำให้ขึ้นใจเสมอเมื่อสร้างโค้ดที่เกี่ยวข้องใน Strapi:
 
-* **Stock Update Logic (กฎการอัปเดตสต็อกสินค้า) - (ปรับปรุงล่าสุด)**
+* **Stock Update Logic (กฎการอัปเดตสต็อกสินค้า)**
 * **ลดสต็อก (-):**
-    * เมื่อ `Sale` (บิลขาย) ถูกอัปเดตสถานะเป็น `COMPLETED`.
-    * เมื่อ `RepairJob` (ใบงานซ่อม) ถูกอัปเดตสถานะเป็น `COMPLETED`.
-    * **[ใหม่]** เมื่อ `Purchase` (ใบสั่งซื้อ) ถูกเปลี่ยนสถานะจาก `RECEIVED` เป็นสถานะอื่น (เช่น `CANCELLED`) จะต้อง **ลดสต็อกคืน** ตามจำนวนที่เคยรับเข้ามา.
+    * เมื่อมีการสร้าง `SaleItem` ใหม่ (ใน `sale-item` Lifecycles `afterCreate`).
+    * เมื่อ `RepairJob` ถูกอัปเดตสถานะเป็น `COMPLETED` (ใน `repair-job` Lifecycles `afterUpdate`).
+    * **[ใหม่]** เมื่อ `Purchase` ถูกเปลี่ยนสถานะจาก `RECEIVED` เป็นสถานะอื่น (เช่น `CANCELLED`) (ใน `purchase` Lifecycles `beforeUpdate` และ `afterUpdate`) จะต้อง **ลดสต็อกคืน** ตามจำนวนที่เคยรับเข้ามา
 
 * **เพิ่มสต็อก (+):**
-    * เมื่อ `Purchase` (ใบสั่งซื้อ) ถูกอัปเดตสถานะเป็น `RECEIVED`.
-    * เมื่อ `Sale` (บิลขาย) ที่เคยมีสถานะ `COMPLETED` ถูกเปลี่ยนเป็นสถานะอื่น.
-    * เมื่อ `RepairJob` (ใบงานซ่อม) ที่เคยมีสถานะ `COMPLETED` ถูกเปลี่ยนเป็นสถานะอื่น.
-    * **[ใหม่]** เมื่อ `Sale` (บิลขาย) ที่มีสถานะ `COMPLETED` ถูกลบ.
-    * **[ใหม่]** เมื่อ `RepairJob` (ใบงานซ่อม) ที่มีสถานะ `COMPLETED` ถูกลบ.
+    * เมื่อ `Purchase` ถูกอัปเดตสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`).
+    * **[ใหม่]** เมื่อมีการลบ `SaleItem` หรือ `Sale` ทั้งหมด (ใน `sale-item` Lifecycles `afterDelete`) จะต้อง **เพิ่มสต็อกคืน**.
+    * **[ใหม่]** เมื่อ `RepairJob` ถูกเปลี่ยนสถานะจาก `COMPLETED` เป็นสถานะอื่น (เช่น `CANCELLED`) (ใน `repair-job` Lifecycles `beforeUpdate` และ `afterUpdate`) จะต้อง **เพิ่มสต็อกของอะไหล่ที่ใช้คืน**.
 
 * **Cost Calculation Logic (กฎการคำนวณต้นทุน)**
 * **Average Cost (ต้นทุนเฉลี่ย):** เมื่อ `Purchase` มีสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`), จะต้องคำนวณ `average_cost` ของสินค้าในตาราง `Stock` ใหม่โดยใช้สูตร Moving Average.
@@ -77,11 +75,10 @@
 * **Labor Cost (ค่าแรง):** ใน `RepairJob` (ใน `repair-job` Lifecycles `beforeUpdate`), ค่าแรง (`labor_cost`) จะถูกคำนวณจาก `total_cost` (ที่ผู้ใช้กรอก) ลบด้วย `parts_cost` (ต้นทุนรวมของอะไหล่ที่ใช้ ซึ่งคำนวณจาก `UsedPart`).
 * **Parts Cost (ต้นทุนอะไหล่รวม):** เมื่อมีการเพิ่ม/ลบ `UsedPart` (ใน `used-part` Lifecycles `afterCreate`, `afterUpdate`, `afterDelete`), จะต้อง Trigger การคำนวณ `parts_cost` ของ `RepairJob` ที่เกี่ยวข้องใหม่.
 
-* **Status-Driven Logic (กฎที่ขับเคลื่อนด้วยสถานะ) - (ปรับปรุงล่าสุด)**
-* การจัดการสต็อกทั้งหมด (ทั้ง `Sale` และ `RepairJob`) จะถูกขับเคลื่อนด้วยการเปลี่ยน `status` เป็น `COMPLETED` เท่านั้น.
-* **ตัวอย่างขาไป:** การตัดสต็อกจะเกิดขึ้นก็ต่อเมื่อ `Sale.status_sale` หรือ `RepairJob.status_repair` เปลี่ยนเป็น `COMPLETED`.
-* **ตัวอย่างขากลับ:** การเพิ่มสต็อกคืนจะเกิดขึ้นก็ต่อเมื่อ `status` **เคยเป็น `COMPLETED`** แล้วถูกเปลี่ยนเป็นสถานะอื่น หรือเมื่อ Entity ที่มีสถานะ `COMPLETED` ถูกลบ.
-* **Cascading Deletes:** เมื่อ `Sale` หรือ `RepairJob` ถูกลบ, `SaleItem` หรือ `UsedPart` ที่เกี่ยวข้องจะถูกลบตามไปด้วยโดยอัตโนมัติ.
+* **Status-Driven Logic (กฎที่ขับเคลื่อนด้วยสถานะ)**
+* การกระทำหลายอย่างในระบบถูกขับเคลื่อนด้วยการเปลี่ยน `status` ทั้งขาไปและขากลับ
+* **ตัวอย่างขาไป:** การตัดสต็อกจะเกิดขึ้นก็ต่อเมื่อ `RepairJob.status` เปลี่ยนเป็น `COMPLETED` เท่านั้น
+* **[ใหม่] ตัวอย่างขากลับ:** การเพิ่มสต็อกคืนจะเกิดขึ้นก็ต่อเมื่อ `RepairJob.status` **เคยเป็น `COMPLETED`** แล้วถูกเปลี่ยนเป็นสถานะอื่น เพื่อป้องกันการเพิ่มสต็อกซ้ำซ้อน การตรวจสอบสถานะก่อนหน้า (`event.state.status` ใน `beforeUpdate`) จึงเป็นสิ่งจำเป็นอย่างยิ่ง
 
 ---
 
