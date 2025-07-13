@@ -14,9 +14,11 @@ export default factories.createCoreService('api::used-part.used-part', ({ strapi
 
     try {
       // 1. Find the RepairJob with all related UsedParts
+      // We cast to a known interface that includes the populated relations.
+      // This interface should be defined in a shared types file or at the top of the lifecycles file.
       const repairJob = await strapi.entityService.findOne('api::repair-job.repair-job', repairJobId, {
         populate: { used_parts: true },
-      });
+      }) as unknown as { id: number; total_cost: number; used_parts: { cost_at_time: number; quantity: number }[] };
 
       if (!repairJob) {
         console.error(`RepairJob with ID ${repairJobId} not found.`);
