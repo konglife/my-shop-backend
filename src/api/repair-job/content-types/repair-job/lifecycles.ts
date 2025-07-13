@@ -94,11 +94,21 @@ export default {
     const repairJobId = where.id;
     if (!repairJobId) return;
 
-    const existingEntry = await strapi.entityService.findOne('api::repair-job.repair-job', repairJobId, { populate: ['used_parts'] }) as unknown as RepairJob;
+    // Fetch the full, current state of the repair job with its parts
+    const existingEntry = await strapi.entityService.findOne('api::repair-job.repair-job', repairJobId, {
+      populate: { used_parts: true },
+    }) as unknown as RepairJob;
+
     if (!existingEntry) return;
 
     // Cost calculation logic
-    const stateForCostCalc = { ...existingEntry, total_cost: data.total_cost ?? existingEntry.total_cost };
+    // Ensure used_parts is an array before calculation.
+    const partsForCostCalc = Array.isArray(existingEntry.used_parts) ? existingEntry.used_parts : [];
+    const stateForCostCalc = {
+      ...existingEntry,
+      used_parts: partsForCostCalc,
+      total_cost: data.total_cost ?? existingEntry.total_cost,
+    };
     const { parts_cost, labor_cost } = calculateCosts(stateForCostCalc);
     data.parts_cost = parts_cost;
     data.labor_cost = labor_cost;
