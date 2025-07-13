@@ -11,18 +11,6 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "name": {
-      "type": "string",
-      "required": true
-    },
-    "quantity": {
-      "type": "integer",
-      "required": true
-    },
-    "purchase_price": {
-      "type": "decimal",
-      "required": true
-    },
     "status_purchase": {
       "type": "enumeration",
       "required": true,
@@ -40,15 +28,16 @@
     "received_date": {
       "type": "datetime"
     },
-    "products": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::product.product"
-    },
     "supplier": {
       "type": "relation",
-      "relation": "oneToOne",
+      "relation": "manyToOne",
       "target": "api::supplier.supplier"
+    },
+    "purchase_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-item.purchase-item",
+      "mappedBy": "purchase"
     }
   }
 }

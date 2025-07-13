@@ -49,9 +49,9 @@
 
 ---
 
-#### **3.2 Inventory Module (Content Types: Product, Category, Supplier, Stock, Purchase)**
+#### **3.2 Inventory Module (Content Types: Product, Category, Supplier, Stock, Purchase, PurchaseItem)**
 * **หน้าที่:** หัวใจหลักในการจัดการสินค้า, สต็อก, ผู้จัดจำหน่าย, และการสั่งซื้อ
-* **Data Models:** Product, Category, Supplier, Stock, Purchase
+* **Data Models:** Product, Category, Supplier, Stock, Purchase, PurchaseItem
 * **ฟังก์ชันหลัก (ผ่าน Strapi Admin Panel และ Custom Logic):**
     * จัดการข้อมูลสินค้า (ชื่อ, รายละเอียด, ราคาขาย) และผู้จัดจำหน่าย
     * สร้างและติดตามสถานะใบสั่งซื้อสินค้า (Purchase)

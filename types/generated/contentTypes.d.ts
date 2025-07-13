@@ -470,6 +470,46 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiPurchaseItemPurchaseItem
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'purchase_items';
+  info: {
+    description: '';
+    displayName: 'Purchase Item';
+    pluralName: 'purchase-items';
+    singularName: 'purchase-item';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::purchase-item.purchase-item'
+    > &
+      Schema.Attribute.Private;
+    product: Schema.Attribute.Relation<'manyToOne', 'api::product.product'>;
+    publishedAt: Schema.Attribute.DateTime;
+    purchase: Schema.Attribute.Relation<'manyToOne', 'api::purchase.purchase'>;
+    quantity: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 1;
+        },
+        number
+      >;
+    unit_price: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiPurchasePurchase extends Struct.CollectionTypeSchema {
   collectionName: 'purchases';
   info: {
@@ -490,19 +530,19 @@ export interface ApiPurchasePurchase extends Struct.CollectionTypeSchema {
       'api::purchase.purchase'
     > &
       Schema.Attribute.Private;
-    name: Schema.Attribute.String & Schema.Attribute.Required;
     order_date: Schema.Attribute.DateTime;
-    products: Schema.Attribute.Relation<'oneToMany', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
-    purchase_price: Schema.Attribute.Decimal & Schema.Attribute.Required;
-    quantity: Schema.Attribute.Integer & Schema.Attribute.Required;
+    purchase_items: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::purchase-item.purchase-item'
+    >;
     received_date: Schema.Attribute.DateTime;
     status_purchase: Schema.Attribute.Enumeration<
       ['PENDING', 'RECEIVED', 'CANCELLED']
     > &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'PENDING'>;
-    supplier: Schema.Attribute.Relation<'oneToOne', 'api::supplier.supplier'>;
+    supplier: Schema.Attribute.Relation<'manyToOne', 'api::supplier.supplier'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -723,7 +763,7 @@ export interface ApiUsedPartUsedPart extends Struct.CollectionTypeSchema {
       'api::used-part.used-part'
     > &
       Schema.Attribute.Private;
-    products: Schema.Attribute.Relation<'oneToMany', 'api::product.product'>;
+    product: Schema.Attribute.Relation<'manyToOne', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
     quantity: Schema.Attribute.Integer & Schema.Attribute.Required;
     repair_job: Schema.Attribute.Relation<
@@ -1248,6 +1288,7 @@ declare module '@strapi/strapi' {
       'api::category.category': ApiCategoryCategory;
       'api::customer.customer': ApiCustomerCustomer;
       'api::product.product': ApiProductProduct;
+      'api::purchase-item.purchase-item': ApiPurchaseItemPurchaseItem;
       'api::purchase.purchase': ApiPurchasePurchase;
       'api::repair-job.repair-job': ApiRepairJobRepairJob;
       'api::sale-item.sale-item': ApiSaleItemSaleItem;

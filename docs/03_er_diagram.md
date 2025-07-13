@@ -15,11 +15,13 @@ erDiagram
         decimal selling_price
     }
     PURCHASE {
-        integer quantity
-        decimal purchase_price
         enumeration status_purchase
         datetime order_date
         datetime received_date
+    }
+    PURCHASE_ITEM {
+        integer quantity
+        decimal unit_price
     }
     REPAIR_JOB {
         string name
@@ -35,6 +37,7 @@ erDiagram
     SALE_ITEM {
         integer quantity
         decimal price_at_time
+        decimal cost_at_time
     }
     STOCK {
         integer quantity
@@ -57,15 +60,18 @@ erDiagram
 
     CUSTOMER ||--o{ REPAIR_JOB : "repair_jobs"
     CUSTOMER ||--o{ SALE : "sales"
-    REPAIR_JOB ||--o{ USED_PART : "used_parts"
-    PURCHASE ||--o{ PRODUCT : "products"
+    SUPPLIER ||--o{ PURCHASE : "purchases"
+    PURCHASE ||--o{ PURCHASE_ITEM : "purchase_items"
     SALE ||--o{ SALE_ITEM : "sale_items"
-    USED_PART ||--o{ PRODUCT : "products"
-    SALE_ITEM ||--o{ PRODUCT : "products"
+    REPAIR_JOB ||--o{ USED_PART : "used_parts"
+    
+    PRODUCT ||--|{ PURCHASE_ITEM : "product"
+    PRODUCT ||--|{ SALE_ITEM : "product"
+    PRODUCT ||--|{ USED_PART : "product"
+
     PRODUCT ||--|| CATEGORY : "category"
     PRODUCT ||--|| UNIT : "unit"
-    PRODUCT ||--|| STOCK : "stock"
-    PURCHASE ||--|| SUPPLIER : "supplier"
+    PRODUCT ||--o{ STOCK : "stock"
 ```
 
 ## คำอธิบาย
@@ -124,20 +130,14 @@ erDiagram
 **4. PURCHASE**
 
 * **attributes**
-
-  * `quantity` (integer, จำเป็น)
-  * `purchase_price` (decimal, จำเป็น)
-  * `status_purchase` (enumeration, จำเป็น)
+  * `status_purchase` (enumeration, จำเป็น: PENDING, RECEIVED, CANCELLED)
   * `order_date` (datetime, ไม่จำเป็น)
   * `received_date` (datetime, ไม่จำเป็น)
 * **ความสัมพันธ์**
-
-  * **หนึ่งใบสั่งซื้อ (1 PURCHASE) เกี่ยวข้องกับสินค้าหลายรายการ (N PRODUCT)**
-
-    * one-to-many (`products`)
-  * **หนึ่งใบสั่งซื้อ (1 PURCHASE) มาจากผู้จัดส่งหนึ่ง (1 SUPPLIER)**
-
-    * one-to-one (`supplier`)
+  * **หนึ่งใบสั่งซื้อ (1 PURCHASE) มีได้หลายรายการสินค้า (N PURCHASE_ITEM)**
+    * one-to-many (`purchase_items`)
+  * **หนึ่งใบสั่งซื้อ (1 PURCHASE) มาจากผู้จัดจำหน่ายหนึ่งราย (1 SUPPLIER)**
+    * many-to-one (`supplier`)
 
 ---
 
@@ -178,20 +178,17 @@ erDiagram
 
 ---
 
-**7. SALE\_ITEM**
+**7. SALE_ITEM**
 
 * **attributes**
-
   * `quantity` (integer, จำเป็น)
-  * `price_at_time` (decimal, ไม่จำเป็น)
+  * `price_at_time` (decimal, ไม่จำเป็น, บันทึกราคาขาย ณ เวลานั้น)
+  * `cost_at_time` (decimal, ไม่จำเป็น, บันทึกต้นทุน ณ เวลานั้น)
 * **ความสัมพันธ์**
-
-  * **แต่ละ sale\_item เชื่อมกับการขายหนึ่งรายการ (1 SALE)**
-
+  * **แต่ละ sale_item เป็นส่วนหนึ่งของการขายหนึ่งรายการ (1 SALE)**
     * many-to-one (`sale`)
-  * **แต่ละ sale\_item อาจเกี่ยวข้องกับสินค้าหลายรายการ (N PRODUCT)**
-
-    * one-to-many (`products`)
+  * **แต่ละ sale_item คือสินค้าหนึ่งชนิด (1 PRODUCT)**
+    * many-to-one (`product`)
 
 ---
 
@@ -235,20 +232,29 @@ erDiagram
 
 ---
 
-**11. USED\_PART**
+**11. USED_PART**
 
 * **attributes**
-
   * `quantity` (integer, จำเป็น)
-  * `cost_at_time` (decimal, ไม่จำเป็น)
+  * `cost_at_time` (decimal, ไม่จำเป็น, บันทึกต้นทุนอะไหล่ ณ เวลานั้น)
 * **ความสัมพันธ์**
-
-  * **อะไหล่ที่ใช้แต่ละรายการ (1 USED\_PART) เป็นส่วนหนึ่งของการซ่อมหนึ่งรายการ (1 REPAIR\_JOB)**
-
+  * **อะไหล่ที่ใช้แต่ละรายการ (1 USED_PART) เป็นส่วนหนึ่งของการซ่อมหนึ่งรายการ (1 REPAIR_JOB)**
     * many-to-one (`repair_job`)
-  * **อะไหล่ที่ใช้หนึ่งรายการ (1 USED\_PART) อาจเชื่อมกับสินค้าหลายรายการ (N PRODUCT)**
+  * **อะไหล่ที่ใช้หนึ่งรายการ (1 USED_PART) คือสินค้าหนึ่งชนิด (1 PRODUCT)**
+    * many-to-one (`product`)
 
-    * one-to-many (`products`)
+---
+
+**12. PURCHASE_ITEM (ใหม่)**
+
+* **attributes**
+  * `quantity` (integer, จำเป็น)
+  * `unit_price` (decimal, จำเป็น, ราคาซื้อต่อหน่วย)
+* **ความสัมพันธ์**
+  * **รายการสั่งซื้อแต่ละรายการ (1 PURCHASE_ITEM) เป็นส่วนหนึ่งของใบสั่งซื้อหนึ่งใบ (1 PURCHASE)**
+    * many-to-one (`purchase`)
+  * **รายการสั่งซื้อแต่ละรายการ (1 PURCHASE_ITEM) คือสินค้าหนึ่งชนิด (1 PRODUCT)**
+    * many-to-one (`product`)
 
 ---
 

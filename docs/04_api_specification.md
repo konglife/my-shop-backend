@@ -118,17 +118,37 @@
 * **Request Body (`POST /api/purchases`):**
     ```json
     {
-      "product": { "id": 101 }, // เชื่อมโยงกับ Product ID
-      "supplier": { "id": 301 }, // เชื่อมโยงกับ Supplier ID
-      "quantity": 10,
-      "purchase_price": 870.00,
-      "status_purchase": "PENDING", // หรือ "RECEIVED" หากต้องการเพิ่มสต็อกทันที
-      "order_date": "2025-07-01T10:00:00.000Z"
+      "supplier": { "id": 301 },
+      "status_purchase": "PENDING",
+      "order_date": "2025-07-01T10:00:00.000Z",
+      "purchase_items": [
+        {
+          "product": { "id": 101 },
+          "quantity": 10,
+          "unit_price": 870.00
+        },
+        {
+          "product": { "id": 102 },
+          "quantity": 5,
+          "unit_price": 1500.50
+        }
+      ]
     }
     ```
     * *หมายเหตุ:* การเพิ่มสต็อกและคำนวณต้นทุนเฉลี่ยจะเกิดขึ้นโดยอัตโนมัติเมื่อ `status_purchase` เป็น `RECEIVED` ซึ่งสามารถกำหนดได้ทั้งตอนสร้างผ่าน `POST` หรือตอนอัปเดตผ่าน `PUT /api/purchases/{id}`.
 
 *(Endpoints สำหรับ Categories และ Suppliers จะมีรูปแบบ CRUD ที่คล้ายกันกับ Products โดยไม่มี Logic พิเศษ)*
+
+### **Purchase Items (`/api/purchase-items`)**
+
+Endpoints มาตรฐานสำหรับจัดการ `Purchase Item` โดยตรง (อาจไม่ค่อยได้ใช้ เพราะมักจะจัดการผ่าน `Purchase` หลัก)
+
+| Method | Path    | Description         | Permissions |
+| :----- | :------ | :------------------ | :---------- |
+| `GET`  | `/`     | ดึงข้อมูลรายการสั่งซื้อทั้งหมด | Admin       |
+| `GET`  | `/{id}` | ดึงข้อมูลรายการสั่งซื้อเฉพาะ | Admin       |
+| `PUT`  | `/{id}` | อัปเดตรายการสั่งซื้อ | Admin       |
+| `DELETE` | `/{id}` | ลบรายการสั่งซื้อ       | Admin       |
 
 ---
 

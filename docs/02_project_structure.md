@@ -50,9 +50,16 @@ src/api/
 ├── category/             # Content Type: หมวดหมู่สินค้า
 ├── supplier/             # Content Type: ผู้จัดจำหน่าย
 ├── stock/                # Content Type: คลังสินค้า
-├── purchase/             # Content Type: ใบสั่งซื้อ
+├── purchase/             # Content Type: ใบสั่งซื้อ (ใบหลัก)
 │   ├── content-types/
 │   │   └── purchase/
+├── purchase-item/        # Content Type: รายการสินค้าในใบสั่งซื้อ
+│   ├── content-types/
+│   │   └── purchase-item/
+│   │       ├── schema.json
+│   │       └── lifecycles.js
+│   ├── controllers/
+│   └── services/
 │   │       ├── schema.json
 │   │       └── lifecycles.js # ★★★ ที่อยู่ของ Business Logic สำหรับ Purchase (เช่น การเพิ่มสต็อก, คำนวณ Average Cost)
 │   ├── controllers/

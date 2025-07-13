@@ -1,5 +1,3 @@
-
-
 ## **แผนการพัฒนา (Development Plan) ระบบจัดการร้านด้วย Strapi**
 
 ### **Phase 0: การเตรียมความพร้อมและตั้งค่า (Preparation & Setup)**
@@ -37,12 +35,13 @@
 | 2.4 | สร้าง **Product** | name (Text), description (Rich Text), selling\_price (Decimal). \<br\> **Relations:** Many-to-One กับ Category, Many-to-One กับ units |
 | 2.5 | สร้าง **Stock** | quantity (Integer), min\_quantity (Integer), average\_cost (Decimal). \<br\> **Relation:** One-to-One กับ Product |
 | 2.6 | สร้าง **Customer** | name (Text), phone (Text), email (Email), address (Text Area) |
-| 2.7 | สร้าง **Purchase** | quantity (Integer), purchase\_price (Decimal), status (Enumeration: PENDING, RECEIVED, CANCELLED), order\_date (DateTime), received\_date (DateTime). \<br\> **Relations:** Many-to-One กับ Product, Many-to-One กับ Supplier |
-| 2.8 | สร้าง **RepairJob** | description (Text Area), status (Enumeration: IN\_PROGRESS, COMPLETED, CANCELLED), total\_cost (Decimal), parts\_cost (Decimal), labor\_cost (Decimal). \<br\> **Relation:** Many-to-One กับ Customer |
-| 2.9 | สร้าง **UsedPart** | quantity (Integer), cost\_at\_time (Decimal). \<br\> **Relations:** Many-to-One กับ RepairJob, Many-to-One กับ Product |
-| 2.10 | สร้าง **Sale** | sale\_date (DateTime), total\_amount (Decimal). \<br\> **Relation:** Many-to-One กับ Customer (ตั้งค่าใน Strapi ว่าไม่จำเป็นต้องมี หรือ Optional) |
-| 2.11 | สร้าง **SaleItem** | quantity (Integer), price\_at\_time (Decimal). \<br\> **Relations:** Many-to-One กับ Sale, Many-to-One กับ Product |
-| 2.12 | **ตั้งค่า Roles & Permissions** | ไปที่ Settings \-\> Roles \-\> Authenticated. ตรวจสอบและให้สิทธิ์ find, findOne กับทุก Content-Type เพื่อให้ดึงข้อมูลได้ก่อน จากนั้นค่อยปรับแก้ตาม 04\_api\_specification.md ในภายหลัง |
+| 2.7 | สร้าง **Purchase** | status (Enumeration: PENDING, RECEIVED, CANCELLED), order\_date (DateTime), received\_date (DateTime). \<br\> **Relation:** Many-to-One กับ Supplier |
+| 2.8 | สร้าง **PurchaseItem (ใหม่)** | quantity (Integer), unit\_price (Decimal). <br> **Relations:** Many-to-One กับ Purchase, Many-to-One กับ Product |
+| 2.9 | สร้าง **RepairJob** | description (Text Area), status (Enumeration: IN\_PROGRESS, COMPLETED, CANCELLED), total\_cost (Decimal), parts\_cost (Decimal), labor\_cost (Decimal). \<br\> **Relation:** Many-to-One กับ Customer |
+| 2.10 | สร้าง **UsedPart** | quantity (Integer), cost\_at\_time (Decimal). \<br\> **Relations:** Many-to-One กับ RepairJob, Many-to-One กับ Product |
+| 2.11 | สร้าง **Sale** | sale\_date (DateTime), total\_amount (Decimal). \<br\> **Relation:** Many-to-One กับ Customer (ตั้งค่าใน Strapi ว่าไม่จำเป็นต้องมี หรือ Optional) |
+| 2.12 | สร้าง **SaleItem** | quantity (Integer), price\_at\_time (Decimal), cost\_at\_time (Decimal). \<br\> **Relations:** Many-to-One กับ Sale, Many-to-One กับ Product |
+| 2.13 | **ตั้งค่า Roles & Permissions** | ไปที่ Settings \-\> Roles \-\> Authenticated. ตรวจสอบและให้สิทธิ์ find, findOne กับทุก Content-Type เพื่อให้ดึงข้อมูลได้ก่อน จากนั้นค่อยปรับแก้ตาม 04\_api\_specification.md ในภายหลัง |
 
 **เมื่อทำเสร็จแล้ว:** ให้ commit การเปลี่ยนแปลงทั้งหมด git add . และ git commit \-m "feat: setup all content types and relations"
 
@@ -58,7 +57,7 @@
 
 #### **Task 3.1: Logic การจัดการใบสั่งซื้อ (Purchase Lifecycle)**
 
-  * **เป้าหมาย:** จัดการสต็อกและต้นทุนเฉลี่ยให้สอดคล้องกับทุกการกระทำของใบสั่งซื้อ (สร้าง, อัปเดต, ลบ)
+  * **เป้าหมาย:** จัดการสต็อกและต้นทุนเฉลี่ยให้สอดคล้องกับทุกการกระทำของใบสั่งซื้อ และลบข้อมูลที่เกี่ยวข้องออกไปด้วยกัน
   * **ไฟล์ที่จะสร้าง/แก้ไข:** `src/api/purchase/content-types/purchase/lifecycles.js`
   * **คำสั่งสำหรับ `geminiCLI`:**
     ```bash
@@ -70,15 +69,16 @@
     สร้างโค้ดสำหรับ `lifecycles.js` ของ `purchase` ให้มี Logic การจัดการสต็อกที่สมบูรณ์.
 
     **Business Logic ที่ต้องใส่:**
-    1.  **afterCreate(event):** ถ้า Purchase ถูกสร้างพร้อมสถานะ 'RECEIVED' ให้ **เพิ่มสต็อก** และคำนวณต้นทุนเฉลี่ยทันที.
+    1.  **afterCreate(event):** ถ้า Purchase ถูกสร้างพร้อมสถานะ 'RECEIVED' ให้วนลูป `purchase_items` เพื่อ **เพิ่มสต็อก** และคำนวณต้นทุนเฉลี่ยทันที.
     2.  **afterUpdate(event):**
-        - ถ้าสถานะเปลี่ยนเป็น 'RECEIVED' -> ให้ **เพิ่มสต็อก** และคำนวณต้นทุนเฉลี่ย.
-        - ถ้าสถานะเปลี่ยนจาก 'RECEIVED' เป็นสถานะอื่น -> ให้ **ลดสต็อก** คืน (แต่ไม่คำนวณต้นทุนเฉลี่ยย้อนหลัง).
+        - ถ้าสถานะเปลี่ยนเป็น 'RECEIVED' -> ให้วนลูป `purchase_items` เพื่อ **เพิ่มสต็อก** และคำนวณต้นทุนเฉลี่ย.
+        - ถ้าสถานะเปลี่ยนจาก 'RECEIVED' เป็นสถานะอื่น -> ให้วนลูป `purchase_items` เพื่อ **ลดสต็อก** คืน (แต่ไม่คำนวณต้นทุนเฉลี่ยย้อนหลัง).
     3.  **beforeDelete(event):**
         - ตรวจสอบสถานะของ Purchase ที่จะลบ. ถ้าเป็น 'RECEIVED' -> ให้ **ลดสต็อก** คืน.
+        - **สำคัญ:** หลังจากจัดการสต็อกแล้ว ให้ลบ `PurchaseItem` ทั้งหมดที่เกี่ยวข้องกับ Purchase นี้ทิ้งไปด้วย.
     "
     ```
-  * **คำอธิบาย (ภาษาไทย):** Prompt นี้จะสร้าง Logic ที่ครอบคลุมทุกกรณีสำหรับใบสั่งซื้อ ทำให้มั่นใจได้ว่าสต็อกและต้นทุนเฉลี่ยจะถูกปรับปรุงอย่างถูกต้อง ไม่ว่าจะสร้างใบสั่งซื้อเป็น RECEIVED ตั้งแต่แรก, อัปเดตสถานะ, หรือลบใบสั่งซื้อที่เคยรับของไปแล้วทิ้ง
+  * **คำอธิบาย (ภาษาไทย):** Prompt นี้จะสร้าง Logic ที่ครอบคลุมทุกกรณีสำหรับใบสั่งซื้อ ทำให้มั่นใจได้ว่าสต็อกและต้นทุนเฉลี่ยจะถูกปรับปรุงอย่างถูกต้อง และยังจัดการลบข้อมูลลูก (PurchaseItem) เมื่อข้อมูลแม่ (Purchase) ถูกลบด้วย
 
 -----
 

@@ -1,8 +1,15 @@
 import { type Event } from '@strapi/database/dist/lifecycles';
 
-// --- TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS (REFACTORED) ---
 interface Product {
   id: number;
+}
+
+interface PurchaseItem {
+  id: number;
+  quantity: number;
+  unit_price: number;
+  product: Product;
 }
 
 interface Stock {
@@ -14,15 +21,13 @@ interface Stock {
 interface Purchase {
   id: number;
   status_purchase: 'PENDING' | 'RECEIVED' | 'CANCELLED';
-  quantity: number;
-  purchase_price: number;
-  products: Product[];
+  purchase_items: PurchaseItem[];
 }
 
-// --- HELPER FUNCTION ---
+// --- HELPER FUNCTION (REFACTORED) ---
 
 /**
- * Updates stock for all products in a given purchase.
+ * Updates stock for all products in a given purchase by processing its purchase items.
  * Handles both increasing stock (on reception) and decreasing stock (on reversal).
  * Also recalculates average cost when receiving goods.
  * @param {number} purchaseId - The ID of the purchase.
@@ -32,17 +37,22 @@ async function updateStockForPurchase(purchaseId: number, operation: 'INCREASE' 
   console.log(`--- Starting stock update (${operation}) for Purchase ID: ${purchaseId} ---`);
   try {
     const purchase = await strapi.entityService.findOne('api::purchase.purchase', purchaseId, {
-      populate: ['products'],
-    }) as unknown as Purchase;
+      populate: {
+        purchase_items: {
+          populate: {
+            product: true,
+          },
+        },
+      },
+    } as any) as unknown as Purchase;
 
-    if (!purchase || !purchase.products || purchase.products.length === 0) {
-      console.log(`Purchase ${purchaseId} has no products to process.`);
+    if (!purchase || !purchase.purchase_items || purchase.purchase_items.length === 0) {
+      console.log(`Purchase ${purchaseId} has no items to process.`);
       return;
     }
 
-    for (const product of purchase.products) {
-      const quantity = purchase.quantity;
-      const price = purchase.purchase_price;
+    for (const item of purchase.purchase_items) {
+      const { product, quantity, unit_price: price } = item;
       if (!product?.id || !quantity) continue;
 
       const stock = await strapi.db.query('api::stock.stock').findOne({ where: { product: product.id } }) as Stock;
@@ -56,7 +66,7 @@ async function updateStockForPurchase(purchaseId: number, operation: 'INCREASE' 
           const rawAvgCost = newTotalQuantity > 0
             ? ((currentQuantity * currentAvgCost) + (quantity * price)) / newTotalQuantity
             : price;
-          const newAvgCost = Number(rawAvgCost.toFixed(2)); // Round to 2 decimal places
+          const newAvgCost = Number(rawAvgCost.toFixed(2));
           
           await strapi.db.query('api::stock.stock').update({
             where: { id: stock.id },
@@ -86,12 +96,11 @@ async function updateStockForPurchase(purchaseId: number, operation: 'INCREASE' 
   }
 }
 
-// --- LIFECYCLE HOOKS (Aligned with Sale/RepairJob Logic) ---
+// --- LIFECYCLE HOOKS (No change in logic, but now works with new structure) ---
 
 export default {
   async afterCreate(event: Event) {
     const { result } = event as { result: Purchase };
-    // If a purchase is created as RECEIVED, update stock immediately.
     if (result.status_purchase === 'RECEIVED') {
       console.log(`New purchase ${result.id} created as RECEIVED. Updating stock.`);
       await updateStockForPurchase(result.id, 'INCREASE');
@@ -100,7 +109,6 @@ export default {
 
   async beforeUpdate(event: Event) {
     const { where } = event.params;
-    // Fetch the full state before the update to get the old status
     const existingEntry = await strapi.db.query('api::purchase.purchase').findOne({ where });
     event.state = existingEntry;
   },
@@ -117,11 +125,9 @@ export default {
 
     console.log(`Purchase ${result.id} status change: FROM '${oldStatus}' TO '${newStatus}'`);
 
-    // Case 1: Goods are received
     if (newStatus === 'RECEIVED' && oldStatus !== 'RECEIVED') {
       await updateStockForPurchase(result.id, 'INCREASE');
     }
-    // Case 2: Reception is cancelled/reverted
     else if (oldStatus === 'RECEIVED' && newStatus !== 'RECEIVED') {
       await updateStockForPurchase(result.id, 'DECREASE');
     }
@@ -132,13 +138,25 @@ export default {
     const purchaseId = where.id;
     if (!purchaseId) return;
 
-    const purchaseToDelete = await strapi.entityService.findOne('api::purchase.purchase', purchaseId, { populate: ['products'] }) as unknown as Purchase;
+    const purchaseToDelete = await strapi.entityService.findOne('api::purchase.purchase', purchaseId, {
+      populate: ['purchase_items'],
+    } as any) as unknown as Purchase;
+
     if (!purchaseToDelete) return;
 
-    // If the purchase being deleted was already RECEIVED, we must revert the stock.
+    // If the purchase was RECEIVED, revert the stock first.
     if (purchaseToDelete.status_purchase === 'RECEIVED') {
       console.log(`Purchase ${purchaseId} was RECEIVED. Reverting stock before deletion.`);
       await updateStockForPurchase(purchaseId, 'DECREASE');
+    }
+
+    // Always delete associated purchase_items.
+    if (purchaseToDelete.purchase_items && purchaseToDelete.purchase_items.length > 0) {
+      const itemIds = purchaseToDelete.purchase_items.map(p => p.id);
+      await strapi.db.query('api::purchase-item.purchase-item').deleteMany({
+        where: { id: { $in: itemIds } },
+      });
+      console.log(`Deleted ${itemIds.length} associated PurchaseItems for Purchase ${purchaseId}.`);
     }
   },
 };

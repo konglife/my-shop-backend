@@ -14,7 +14,7 @@ interface UsedPart {
   id: number;
   quantity: number;
   cost_at_time: number;
-  products: Product[];
+  product: Product;
 }
 
 interface RepairJob {
@@ -43,7 +43,7 @@ async function updateStockForRepairJob(repairJobId: number, operation: 'INCREASE
   console.log(`--- Starting stock update (${operation}) for RepairJob ID: ${repairJobId} ---`);
   try {
     const repairJob = await strapi.entityService.findOne('api::repair-job.repair-job', repairJobId, {
-      populate: { used_parts: { populate: 'products' } },
+      populate: { used_parts: { populate: 'product' } },
     }) as unknown as RepairJob;
 
     if (!repairJob || !repairJob.used_parts || repairJob.used_parts.length === 0) {
@@ -52,8 +52,8 @@ async function updateStockForRepairJob(repairJobId: number, operation: 'INCREASE
     }
 
     for (const part of repairJob.used_parts) {
-      if (!part.products || part.products.length === 0 || !part.quantity) continue;
-      const product = part.products[0];
+      if (!part.product || !part.quantity) continue;
+      const product = part.product;
       const stock = await strapi.db.query('api::stock.stock').findOne({ where: { product: product.id } });
       if (stock) {
         const newQuantity = operation === 'DECREASE' ? stock.quantity - part.quantity : stock.quantity + part.quantity;

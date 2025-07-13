@@ -62,17 +62,17 @@
 * **ลดสต็อก (-):**
     * เมื่อ `Sale` (บิลขาย) ถูกอัปเดตสถานะเป็น `COMPLETED`.
     * เมื่อ `RepairJob` (ใบงานซ่อม) ถูกอัปเดตสถานะเป็น `COMPLETED`.
-    * **[ใหม่]** เมื่อ `Purchase` (ใบสั่งซื้อ) ถูกเปลี่ยนสถานะจาก `RECEIVED` เป็นสถานะอื่น (เช่น `CANCELLED`) จะต้อง **ลดสต็อกคืน** ตามจำนวนที่เคยรับเข้ามา.
+    * **[ใหม่]** เมื่อ `Purchase` (ใบสั่งซื้อ) ถูกเปลี่ยนสถานะจาก `RECEIVED` เป็นสถานะอื่น (เช่น `CANCELLED`) จะต้อง **ลดสต็อกคืน** ตามจำนวนใน `PurchaseItem` ที่เคยรับเข้ามา.
 
 * **เพิ่มสต็อก (+):**
-    * เมื่อ `Purchase` (ใบสั่งซื้อ) ถูกอัปเดตสถานะเป็น `RECEIVED`.
+    * เมื่อ `Purchase` (ใบสั่งซื้อ) ถูกอัปเดตสถานะเป็น `RECEIVED` (Logic จะวนลูปผ่าน `PurchaseItem` ทุกรายการ).
     * เมื่อ `Sale` (บิลขาย) ที่เคยมีสถานะ `COMPLETED` ถูกเปลี่ยนเป็นสถานะอื่น.
     * เมื่อ `RepairJob` (ใบงานซ่อม) ที่เคยมีสถานะ `COMPLETED` ถูกเปลี่ยนเป็นสถานะอื่น.
     * **[ใหม่]** เมื่อ `Sale` (บิลขาย) ที่มีสถานะ `COMPLETED` ถูกลบ.
     * **[ใหม่]** เมื่อ `RepairJob` (ใบงานซ่อม) ที่มีสถานะ `COMPLETED` ถูกลบ.
 
 * **Cost Calculation Logic (กฎการคำนวณต้นทุน)**
-* **Average Cost (ต้นทุนเฉลี่ย):** เมื่อ `Purchase` มีสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`), จะต้องคำนวณ `average_cost` ของสินค้าในตาราง `Stock` ใหม่โดยใช้สูตร Moving Average.
+* **Average Cost (ต้นทุนเฉลี่ย):** เมื่อ `Purchase` มีสถานะเป็น `RECEIVED` (ใน `purchase` Lifecycles `afterUpdate`), จะต้องวนลูปผ่าน `PurchaseItem` แต่ละรายการเพื่อคำนวณ `average_cost` ของสินค้าในตาราง `Stock` ใหม่โดยใช้สูตร Moving Average.
     * **[ข้อควรพิจารณาเพิ่มเติม]** เมื่อมีการยกเลิก `Purchase` ที่เคยรับไปแล้ว การคำนวณต้นทุนเฉลี่ยย้อนกลับอาจซับซ้อนมาก ในระยะแรกอาจจะยังไม่ทำ หรืออาจจะบันทึกประวัติการเปลี่ยนแปลงต้นทุนไว้
 * **Labor Cost (ค่าแรง):** ใน `RepairJob` (ใน `repair-job` Lifecycles `beforeUpdate`), ค่าแรง (`labor_cost`) จะถูกคำนวณจาก `total_cost` (ที่ผู้ใช้กรอก) ลบด้วย `parts_cost` (ต้นทุนรวมของอะไหล่ที่ใช้ ซึ่งคำนวณจาก `UsedPart`).
 * **Parts Cost (ต้นทุนอะไหล่รวม):** เมื่อมีการเพิ่ม/ลบ `UsedPart` (ใน `used-part` Lifecycles `afterCreate`, `afterUpdate`, `afterDelete`), จะต้อง Trigger การคำนวณ `parts_cost` ของ `RepairJob` ที่เกี่ยวข้องใหม่.
@@ -81,7 +81,7 @@
 * การจัดการสต็อกทั้งหมด (ทั้ง `Sale` และ `RepairJob`) จะถูกขับเคลื่อนด้วยการเปลี่ยน `status` เป็น `COMPLETED` เท่านั้น.
 * **ตัวอย่างขาไป:** การตัดสต็อกจะเกิดขึ้นก็ต่อเมื่อ `Sale.status_sale` หรือ `RepairJob.status_repair` เปลี่ยนเป็น `COMPLETED`.
 * **ตัวอย่างขากลับ:** การเพิ่มสต็อกคืนจะเกิดขึ้นก็ต่อเมื่อ `status` **เคยเป็น `COMPLETED`** แล้วถูกเปลี่ยนเป็นสถานะอื่น หรือเมื่อ Entity ที่มีสถานะ `COMPLETED` ถูกลบ.
-* **Cascading Deletes:** เมื่อ `Sale` หรือ `RepairJob` ถูกลบ, `SaleItem` หรือ `UsedPart` ที่เกี่ยวข้องจะถูกลบตามไปด้วยโดยอัตโนมัติ.
+* **Cascading Deletes:** เมื่อ `Sale`, `RepairJob`, หรือ `Purchase` ถูกลบ, `SaleItem`, `UsedPart`, หรือ `PurchaseItem` ที่เกี่ยวข้องจะถูกลบตามไปด้วยโดยอัตโนมัติ.
 
 ---
 
